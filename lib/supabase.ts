@@ -1,17 +1,29 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Browser client (for use in components)
-export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// Browser client (for use in components) - lazy initialized to avoid issues during build
+let supabaseInstance: ReturnType<typeof createClient> | null = null;
 
-// Server client with elevated privileges (for API routes)
+export function getSupabase() {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+  }
+  return supabaseInstance;
+}
+
+// Server client with elevated privileges (for API routes) - lazy initialized
+let serviceClientInstance: ReturnType<typeof createClient> | null = null;
+
 export function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  if (!serviceClientInstance) {
+    serviceClientInstance = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+  }
+  return serviceClientInstance;
 }
 
 // Plan upload limits
@@ -29,7 +41,7 @@ export async function getUserPlan(userId: string): Promise<string> {
     .from("subscriptions")
     .select("plan, status")
     .eq("user_id", userId)
-    .single();
+    .single() as any;
 
   if (!data || data.status === "cancelled") return "free";
   return data.plan ?? "free";
@@ -53,7 +65,7 @@ export async function checkAndIncrementUsage(userId: string): Promise<{
     .select("upload_count")
     .eq("user_id", userId)
     .eq("month", month)
-    .single();
+    .single() as any;
 
   const currentCount = usageData?.upload_count ?? 0;
 
@@ -62,7 +74,7 @@ export async function checkAndIncrementUsage(userId: string): Promise<{
   }
 
   // Increment
-  await db.from("usage").upsert(
+  await (db.from("usage") as any).upsert(
     { user_id: userId, month, upload_count: currentCount + 1 },
     { onConflict: "user_id,month" }
   );
@@ -82,20 +94,20 @@ export async function getMonthlyUsage(userId: string): Promise<{ used: number; l
     .select("upload_count")
     .eq("user_id", userId)
     .eq("month", month)
-    .single();
+    .single() as any;
 
   return { used: data?.upload_count ?? 0, limit, plan };
 }
 
 // Save extraction result
-export async function saveExtraction(userId: string, filename: string, data: object) {
+export async function saveExtraction(userId: string, filename: string, data: object): Promise<{ id: string } | null> {
   const db = getServiceClient();
-  const { data: row, error } = await db
-    .from("extractions")
+  const { data: row, error } = await (db
+    .from("extractions") as any)
     .insert({ user_id: userId, filename, extracted_data: data, created_at: new Date().toISOString() })
     .select()
-    .single();
-  return row;
+    .single() as any;
+  return row as { id: string } | null;
 }
 
 // Get user's extraction history
@@ -106,6 +118,6 @@ export async function getExtractions(userId: string, limit = 20) {
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .limit(limit) as any;
   return data ?? [];
 }

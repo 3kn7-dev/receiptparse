@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import type { ExtractedInvoice } from '@/lib/claude'
-import { downloadCSV, invoicesToCSV } from '@/lib/csv'
+import type { InvoiceData } from '@/lib/claude'
+import { downloadCSV, singleInvoiceCSV } from '@/lib/csv'
 
 interface ExtractionTableProps {
-  data: ExtractedInvoice
+  data: InvoiceData
   filename: string
 }
 
@@ -18,7 +18,7 @@ export default function ExtractionTable({ data, filename }: ExtractionTableProps
   const set = (key: string, val: string) =>
     setEditing((prev) => ({ ...prev, [key]: val }))
 
-  const merged: ExtractedInvoice = {
+  const merged: InvoiceData = {
     ...data,
     vendor: getVal('vendor', data.vendor),
     date: getVal('date', data.date),
@@ -30,7 +30,7 @@ export default function ExtractionTable({ data, filename }: ExtractionTableProps
   }
 
   const handleExport = () => {
-    const csv = invoicesToCSV([{ ...merged, filename }])
+    const csv = singleInvoiceCSV(merged, filename)
     downloadCSV(csv, `${filename.replace(/\.[^/.]+$/, '')}-extracted.csv`)
   }
 

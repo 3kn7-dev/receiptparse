@@ -3,7 +3,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ReceiptParse — AI Invoice & Receipt Extractor",
+  title: "ReceiptLedgr — AI Invoice & Receipt Extractor",
   description: "Upload any invoice or receipt. Get structured data in seconds. Export to CSV.",
 };
 

@@ -94,15 +94,15 @@ export async function handleWebhookEvent(event: any): Promise<void> {
   const status: string = data.attributes.status;
 
   if (["subscription_created", "subscription_updated", "subscription_resumed"].includes(eventName)) {
-    await db.from("subscriptions").upsert(
+    await (db.from("subscriptions") as any).upsert(
       { user_id: userId, plan, status, ls_subscription_id: data.id, updated_at: new Date().toISOString() },
       { onConflict: "user_id" }
     );
   }
 
   if (["subscription_cancelled", "subscription_expired"].includes(eventName)) {
-    await db
-      .from("subscriptions")
+    await (db
+      .from("subscriptions") as any)
       .update({ plan: "free", status: "cancelled", updated_at: new Date().toISOString() })
       .eq("user_id", userId);
   }
